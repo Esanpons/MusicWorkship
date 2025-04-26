@@ -1,0 +1,91 @@
+```html
+<!DOCTYPE html>
+<html lang="ca">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor Multimèdia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .media-container {
+            margin-top: 20px;
+        }
+
+        video,
+        audio {
+            max-width: 100%;
+        }
+
+        .back-button {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <button class="back-button" onclick="window.location.href='index.html'">Tornar al llistat</button>
+    <div id="mediaContainer" class="media-container">
+        <!-- Aquí es carregarà el contingut multimèdia -->
+    </div>
+
+    <script>
+        const WORKER_URL = 'https://musicworkship.esteve-65e.workers.dev';
+        const SECRET_KEY = '80JY!2p!RVVD';
+
+        async function loadMedia() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const path = urlParams.get('path');
+
+            if (!path) {
+                alert('No s\'ha especificat cap arxiu');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${WORKER_URL}?path=${encodeURIComponent(path)}&format=base64`, {
+                    headers: {
+                        'Authorization': `Bearer ${SECRET_KEY}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al carregar l\'arxiu');
+                }
+
+                const data = await response.json();
+                const container = document.getElementById('mediaContainer');
+
+                // Determinar si és àudio o vídeo
+                const isVideo = path.toLowerCase().endsWith('.mp4');
+                const mediaElement = document.createElement(isVideo ? 'video' : 'audio');
+
+                mediaElement.controls = true;
+                mediaElement.src = `data:${data.content_type};base64,${data.base64_content}`;
+
+                container.innerHTML = '';
+                container.appendChild(mediaElement);
+
+                // Reproduir automàticament
+                mediaElement.play();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al carregar l\'arxiu');
+            }
+        }
+
+        loadMedia();
+    </script>
+</body>
+
+</html>
+```
