@@ -9,23 +9,17 @@ if (!WORKER_URL || !SECRET_KEY) {
 async function loadMedia() {
     const urlParams = new URLSearchParams(window.location.search);
     const path = urlParams.get('path');
-    const debug = document.getElementById('debug');
-    const errorDiv = document.getElementById('error');
-
-    if (!path) {
-        showError('No s\'ha especificat cap arxiu');
-        return;
-    }
-
     const loading = document.getElementById('loading');
     const container = document.getElementById('mediaContainer');
 
+    if (!path) {
+        showMessage('No s\'ha especificat cap arxiu', 'error');
+        return;
+    }
+
     try {
-        // Primer intentamos con format=url para archivos MP4
         const isMP4 = path.toLowerCase().endsWith('.mp4');
         const format = isMP4 ? 'url' : 'base64';
-
-        showDebug(`Intentant carregar arxiu: ${path}\nFormat: ${format}`);
 
         const response = await fetch(`${WORKER_URL}?path=${encodeURIComponent(path)}&format=${format}`, {
             headers: {
@@ -34,28 +28,27 @@ async function loadMedia() {
         });
 
         if (!response.ok) {
-            throw new Error(`Error de servidor: ${response.status}`);
+            throw new Error(`Error del servidor: ${response.status}`);
         }
 
         const data = await response.json();
-        showDebug(`Resposta rebuda: ${JSON.stringify(data, null, 2)}`);
 
         if (data.error) {
             throw new Error(data.error);
         }
 
-        // Determinar si és àudio o vídeo
-        const isVideo = path.toLowerCase().endsWith('.mp4');
-        const mediaElement = document.createElement(isVideo ? 'video' : 'audio');
-        
+        const mediaElement = document.createElement(isMP4 ? 'video' : 'audio');
         mediaElement.controls = true;
         mediaElement.style.width = '100%';
+        mediaElement.className = 'media-player';
 
-        // Para MP4, usamos la URL directa
+        // Configurar eventos de monitoreo
+        setupMediaEvents(mediaElement);
+
+        // Establecer fuente según el formato
         if (isMP4 && data.url) {
             mediaElement.src = data.url;
         } else {
-            // Para otros formatos, usamos base64
             const blob = new Blob(
                 [Uint8Array.from(atob(data.base64_content), c => c.charCodeAt(0))],
                 { type: data.content_type }
@@ -63,54 +56,63 @@ async function loadMedia() {
             mediaElement.src = URL.createObjectURL(blob);
         }
 
-        // Eventos del elemento multimedia
-        mediaElement.onerror = (e) => {
-            showError(`Error en carregar el mitjà: ${mediaElement.error.message}`);
-            showDebug(`Error de mitjà: ${mediaElement.error.code} - ${mediaElement.error.message}`);
-        };
-        
-        mediaElement.onloadeddata = () => {
-            loading.style.display = 'none';
-            container.style.display = 'block';
-            errorDiv.style.display = 'none';
-        };
-
         container.innerHTML = '';
         container.appendChild(mediaElement);
 
-        // Intentar reproducció automàtica
+        // Mostrar el contenedor cuando el medio esté listo
+        mediaElement.addEventListener('canplay', () => {
+            loading.style.display = 'none';
+            container.style.display = 'block';
+            showMessage('', 'info'); // Limpiar mensajes previos
+        });
+
+        // Intentar reproducción automática
         try {
             await mediaElement.play();
         } catch (playError) {
-            showDebug('Reproducció automàtica no permesa');
+            console.log('Reproducció automàtica no permesa pel navegador');
         }
+
     } catch (error) {
-        showError(`Error: ${error.message}`);
-        showDebug(`Error complet: ${error.stack || error}`);
+        showMessage(error.message, 'error');
         loading.style.display = 'none';
     }
 }
 
-function showError(message) {
-    const errorDiv = document.getElementById('error');
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-    document.getElementById('loading').style.display = 'none';
+function setupMediaEvents(mediaElement) {
+    const events = ['loadstart', 'progress', 'suspend', 'abort', 'error', 'stalled', 'waiting'];
+    
+    events.forEach(event => {
+        mediaElement.addEventListener(event, (e) => {
+            if (event === 'error' && mediaElement.error) {
+                showMessage(`Error de reproducció: ${mediaElement.error.message}`, 'error');
+            }
+        });
+    });
+
+    // Monitorear el buffering
+    mediaElement.addEventListener('waiting', () => {
+        showMessage('Carregant...', 'info');
+    });
+
+    mediaElement.addEventListener('playing', () => {
+        showMessage('', 'info'); // Limpiar mensaje de carga
+    });
 }
 
-function showDebug(message) {
-    const debug = document.getElementById('debug');
-    debug.textContent += message + '\n\n';
-    debug.style.display = 'block';
+function showMessage(message, type = 'info') {
+    const messageDiv = document.getElementById('message') || createMessageElement();
+    messageDiv.textContent = message;
+    messageDiv.className = `message ${type}`;
+    messageDiv.style.display = message ? 'block' : 'none';
+}
+
+function createMessageElement() {
+    const div = document.createElement('div');
+    div.id = 'message';
+    document.body.insertBefore(div, document.getElementById('mediaContainer'));
+    return div;
 }
 
 // Iniciar cuando el documento esté listo
 document.addEventListener('DOMContentLoaded', loadMedia);
-
-// Añadir tecla para mostrar/ocultar debug
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'D' && e.ctrlKey) {
-        const debug = document.getElementById('debug');
-        debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
-    }
-});

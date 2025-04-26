@@ -6,16 +6,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reproductor Multimèdia</title>
     <link rel="stylesheet" href="css/reproductor.css">
+    <style>
+        .message {
+            text-align: center;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        .message.error {
+            background-color: #ffe6e6;
+            color: #d63031;
+        }
+
+        .message.info {
+            background-color: #e6f3ff;
+            color: #0984e3;
+        }
+
+        .media-player {
+            max-width: 100%;
+            margin: 0 auto;
+            display: block;
+        }
+    </style>
 </head>
 
 <body>
     <button class="back-button" onclick="window.location.href='index.html'">Tornar al llistat</button>
     <div id="loading">Carregant arxiu multimèdia...</div>
-    <div id="error" style="display:none; color: red; text-align: center;"></div>
     <div id="mediaContainer" class="media-container" style="display:none;">
         <!-- Aquí es carregarà el contingut multimèdia -->
     </div>
-    <div id="debug" style="display:none; margin: 20px; padding: 10px; background: #f0f0f0;"></div>
     <script src="js/reproductor.js"></script>
 </body>
 
