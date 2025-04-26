@@ -28,6 +28,23 @@
             max-width: 100%;
             margin: 0 auto;
             display: block;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        video::-webkit-media-controls-download-button {
+            display: none;
+        }
+
+        audio::-webkit-media-controls-download-button {
+            display: none;
+        }
+
+        video::-webkit-media-controls-enclosure,
+        audio::-webkit-media-controls-enclosure {
+            overflow: hidden;
         }
     </style>
 </head>

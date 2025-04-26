@@ -6,6 +6,14 @@ if (!WORKER_URL || !SECRET_KEY) {
     window.location.href = 'index.html';
 }
 
+// Prevenir clic derecho en elementos multimedia
+document.addEventListener('contextmenu', function(e) {
+    if (e.target.tagName === 'VIDEO' || e.target.tagName === 'AUDIO') {
+        e.preventDefault();
+        return false;
+    }
+});
+
 async function loadMedia() {
     const urlParams = new URLSearchParams(window.location.search);
     const path = urlParams.get('path');
@@ -41,6 +49,12 @@ async function loadMedia() {
         mediaElement.controls = true;
         mediaElement.style.width = '100%';
         mediaElement.className = 'media-player';
+        mediaElement.controlsList = "nodownload noplaybackrate";
+        mediaElement.oncontextmenu = () => false;
+
+        if (isMP4) {
+            mediaElement.disablePictureInPicture = true;
+        }
 
         // Configurar eventos de monitoreo
         setupMediaEvents(mediaElement);
